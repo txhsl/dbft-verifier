@@ -1,6 +1,9 @@
 package verifier
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/nspcc-dev/neo-go/pkg/core/block"
@@ -57,4 +60,36 @@ func TestVerify(t *testing.T) {
 	))
 	require.NoError(t, err)
 	require.Equal(t, true, VerifyUpdateHeader(parent, current, 860833102))
+}
+
+func BenchmarkVerify(b *testing.B) {
+	var parent *block.Header
+	var current *block.Header
+	for i := 0; i < 1000; i++ {
+		req := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"method":  "getblockheader",
+			"params":  []interface{}{i, true},
+			"id":      1,
+		}
+		reqBody, _ := json.Marshal(req)
+		resp, err := http.Post("http://seed5.neo.org:10332", "application/json", bytes.NewReader(reqBody))
+		require.NoError(b, err)
+
+		defer resp.Body.Close()
+		require.NoError(b, err)
+		var temp map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&temp)
+		require.NoError(b, err)
+
+		parent = current
+		header, err := json.Marshal(temp["result"])
+		require.NoError(b, err)
+		current = new(block.Header)
+		current.UnmarshalJSON(header)
+
+		if i > 0 {
+			require.Equal(b, true, VerifyUpdateHeader(parent, current, 860833102))
+		}
+	}
 }

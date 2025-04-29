@@ -1,6 +1,10 @@
 package verifier
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -226,4 +230,36 @@ func TestVerifyV0ToV2(t *testing.T) {
 	))
 	require.NoError(t, err)
 	require.Equal(t, true, VerifyUpdateHeader(parent, current))
+}
+
+func BenchmarkVerify(b *testing.B) {
+	var parent *types.Header
+	var current *types.Header
+	for i := 0; i < 1000; i++ {
+		req := map[string]interface{}{
+			"id":      0,
+			"jsonrpc": "2.0",
+			"method":  "eth_getBlockByNumber",
+			"params":  []interface{}{"0x" + strconv.FormatInt(int64(i), 16), false},
+		}
+		reqBody, _ := json.Marshal(req)
+		resp, err := http.Post("https://neoxt4seed5.ngd.network", "application/json", bytes.NewReader(reqBody))
+		require.NoError(b, err)
+
+		defer resp.Body.Close()
+		require.NoError(b, err)
+		var temp map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&temp)
+		require.NoError(b, err)
+
+		parent = current
+		header, err := json.Marshal(temp["result"])
+		require.NoError(b, err)
+		current = new(types.Header)
+		current.UnmarshalJSON(header)
+
+		if i > 0 {
+			require.Equal(b, true, VerifyUpdateHeader(parent, current))
+		}
+	}
 }
