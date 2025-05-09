@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "lib",
+    "program",
+    "script",
+]
+resolver = "2"
+
+[workspace.dependencies]
+alloy-consensus = "0.15.10"
+alloy-rlp = "0.3.11"
+alloy-sol-types = "1.0"
