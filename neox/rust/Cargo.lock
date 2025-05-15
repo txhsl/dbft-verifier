@@ -2756,8 +2756,10 @@ name = "neox-dbft-verifier-lib"
 version = "0.1.0"
 dependencies = [
  "alloy-consensus 0.15.10",
+ "alloy-primitives",
  "alloy-rlp",
  "alloy-sol-types",
+ "secp256k1",
 ]
 
 [[package]]

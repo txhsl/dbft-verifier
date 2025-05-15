@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 alloy-consensus = { workspace = true }
+alloy-primitives = { workspace = true }
 alloy-rlp = { workspace = true }
 alloy-sol-types = { workspace = true }
+secp256k1 = { workspace = true }

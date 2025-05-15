@@ -9,7 +9,7 @@
 sp1_zkvm::entrypoint!(main);
 
 use alloy_sol_types::SolType;
-use neox_dbft_verifier_lib::{fibonacci, PublicValuesStruct};
+use neox_dbft_verifier_lib::{verify_update_header, ProofOutputs};
 
 pub fn main() {
     // Read an input to the program.
