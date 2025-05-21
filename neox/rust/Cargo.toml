@@ -7,6 +7,11 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-alloy-consensus = "0.15.10"
+alloy-consensus = "1.0.5"
+alloy-primitives = "1.1.0"
 alloy-rlp = "0.3.11"
 alloy-sol-types = "1.0"
+bls12_381 = { path = "./bls12_381", default-features = false, features = ["groups", "pairings", "experimental"]}
+secp256k1 = { version = "0.30", default-features = false }
+serde_json = "1.0.140"
+sha2 = "0.10.9"
