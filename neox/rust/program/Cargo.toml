@@ -1,0 +1,12 @@
+[package]
+version = "0.1.0"
+name = "neox-dbft-verifier-program"
+edition = "2021"
+
+[dependencies]
+alloy-consensus = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy-rpc-types = { workspace = true }
+sp1-zkvm = "4.2.0"
+neox-dbft-verifier-lib = { path = "../lib" }
+serde_json = { workspace = true }
