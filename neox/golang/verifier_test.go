@@ -135,7 +135,7 @@ func TestVerifyV1(t *testing.T) {
 	require.Equal(t, true, VerifyUpdateHeader(parent, current))
 }
 
-func TestVerifyV0ToV2(t *testing.T) {
+func TestVerifyV0ToV1(t *testing.T) {
 	// Fork-2 => fork-1
 	parent := new(types.Header)
 	err := parent.UnmarshalJSON([]byte(

@@ -22,6 +22,10 @@ const (
 	// ExtraV1 is the 1-st version of block's Extra. Extra of this version includes global
 	// TPKE public key followed by aggregated validators' threshold signature.
 	ExtraV1 byte = 0x01
+	// ExtraV2 is the 2-nd version of block's Extra. Extra of this version includes global
+	// TPKE public key followed by aggregated validators' threshold signature compatible
+	// with Ethereum CL.
+	ExtraV2 byte = 0x02
 	// ExtraV1ECDSAScheme denotes fallback ECDSA multisignature block signing scheme
 	// for ExtraV1 extra.
 	ExtraV1ECDSAScheme byte = 0x00
@@ -34,10 +38,10 @@ const (
 	// HashableExtraV1Len is the length of hashable part of block extra data for
 	// ExtraV1 extra version.
 	HashableExtraV1Len = 1 + 1 + common.HashLength
-
+	// BLSPublicKeyLen is the length of global public key for signature verification.
 	BLSPublicKeyLen = bls12381.SizeOfG1AffineCompressed
-
-	BLSSignatureLength = bls12381.SizeOfG2AffineCompressed
+	// BLSSignatureLen is the length of block signature.
+	BLSSignatureLen = bls12381.SizeOfG2AffineCompressed
 )
 
 var (
@@ -45,6 +49,7 @@ var (
 )
 
 func VerifyUpdateHeader(parent, current *types.Header) bool {
+	// Check basic
 	if current.ParentHash != parent.Hash() {
 		return false
 	}
@@ -89,7 +94,7 @@ func VerifyUpdateHeader(parent, current *types.Header) bool {
 		hasher.Write(data)
 		// Verify sigs
 		return verifyMultiSigs(hasher.Sum(nil), sigs, addrs)
-	case ExtraV1:
+	case ExtraV1, ExtraV2:
 		if len(current.Extra) < 2 {
 			return false
 		}
@@ -126,12 +131,12 @@ func VerifyUpdateHeader(parent, current *types.Header) bool {
 			return verifyMultiSigs(hasher.Sum(nil), sigs, addrs)
 		case ExtraV1ThresholdScheme:
 			// Check format
-			if len(current.Extra) != HashableExtraV1Len+BLSPublicKeyLen+BLSSignatureLength {
+			if len(current.Extra) != HashableExtraV1Len+BLSPublicKeyLen+BLSSignatureLen {
 				return false
 			}
 			// Get global public key and sig
 			pubBytes := current.Extra[HashableExtraV1Len : HashableExtraV1Len+BLSPublicKeyLen]
-			sigBytes := current.Extra[HashableExtraV1Len+BLSPublicKeyLen : HashableExtraV1Len+BLSPublicKeyLen+BLSSignatureLength]
+			sigBytes := current.Extra[HashableExtraV1Len+BLSPublicKeyLen : HashableExtraV1Len+BLSPublicKeyLen+BLSSignatureLen]
 			pk := new(bls12381.G1Affine)
 			_, err := pk.SetBytes(pubBytes)
 			if err != nil {
@@ -153,6 +158,10 @@ func VerifyUpdateHeader(parent, current *types.Header) bool {
 				return false
 			}
 			hash, _ := bls12381.HashToG2(data, BLSDomain)
+			// Negate the sig in V1
+			if current.Extra[0] == ExtraV1 {
+				sig.Neg(sig)
+			}
 			// Verify sig
 			return verifyBLSSig(hash, sig, pk)
 		default:
@@ -236,8 +245,8 @@ func verifyMultiSigs(hash []byte, sigs [][]byte, addrs []common.Address) bool {
 
 func verifyBLSSig(hash bls12381.G2Affine, sig *bls12381.G2Affine, pub *bls12381.G1Affine) bool {
 	_, _, g1, _ := bls12381.Generators()
-
-	// e(pk,g2Hash)=e(g1,-sig)
+	g1.Neg(&g1)
+	// e(pk,g2Hash)=e(g1,sig)
 	ok, err := bls12381.PairingCheck([]bls12381.G1Affine{*pub, g1}, []bls12381.G2Affine{hash, *sig})
 	if err != nil {
 		return false
