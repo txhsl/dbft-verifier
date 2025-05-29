@@ -177,7 +177,7 @@ func encodeSigHeader(header *types.Header) ([]byte, error) {
 	switch v := header.Extra[0]; v {
 	case ExtraV0:
 		hashableExtraLen = HashableExtraV0Len
-	case ExtraV1:
+	case ExtraV1, ExtraV2:
 		hashableExtraLen = HashableExtraV1Len
 	default:
 		return nil, errors.New("unexpected extra version")

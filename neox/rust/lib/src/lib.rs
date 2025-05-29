@@ -213,7 +213,7 @@ fn encode_sig_header(header: Header) -> Result<Vec<u8>, String> {
     let mut out = Vec::<u8>::new();
     let hashable_extra_len: usize = match header.extra_data[0] {
         EXTRA_V0 => HASHABLE_EXTRA_V0_LEN,
-        EXTRA_V1 => HASHABLE_EXTRA_V1_LEN,
+        EXTRA_V1 | EXTRA_V2 => HASHABLE_EXTRA_V1_LEN,
         _ => return Err("unexpected extra version".to_string()),
     };
     let list_header = alloy_rlp::Header {
