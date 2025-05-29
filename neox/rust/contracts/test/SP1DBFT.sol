@@ -3,23 +3,25 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
-import {Fibonacci} from "../src/Fibonacci.sol";
+import {SP1DBFT} from "../src/SP1DBFT.sol";
 import {SP1VerifierGateway} from "@sp1-contracts/SP1VerifierGateway.sol";
 
 struct SP1ProofFixtureJson {
-    uint32 a;
-    uint32 b;
-    uint32 n;
+    bytes32 prevHeader;
+    bytes32 newHeader;
+    bytes32 executionStateRoot;
+    bytes32 consensusHash;
+    bytes32 nextConsensusHash;
     bytes proof;
     bytes publicValues;
     bytes32 vkey;
 }
 
-contract FibonacciGroth16Test is Test {
+contract SP1DBFTGroth16Test is Test {
     using stdJson for string;
 
     address verifier;
-    Fibonacci public fibonacci;
+    SP1DBFT public dbft;
 
     function loadFixture() public view returns (SP1ProofFixtureJson memory) {
         string memory root = vm.projectRoot();
@@ -33,21 +35,22 @@ contract FibonacciGroth16Test is Test {
         SP1ProofFixtureJson memory fixture = loadFixture();
 
         verifier = address(new SP1VerifierGateway(address(1)));
-        fibonacci = new Fibonacci(verifier, fixture.vkey);
+        // The data of a parent block is necessary here.
+        dbft = new SP1DBFT(verifier, fixture.vkey, fixture.prevHeader, "0x", fixture.consensusHash);
     }
 
-    function test_ValidFibonacciProof() public {
+    function test_ValidDBFTProof() public {
         SP1ProofFixtureJson memory fixture = loadFixture();
 
         vm.mockCall(verifier, abi.encodeWithSelector(SP1VerifierGateway.verifyProof.selector), abi.encode(true));
 
-        (uint32 n, uint32 a, uint32 b) = fibonacci.verifyFibonacciProof(fixture.publicValues, fixture.proof);
-        assert(n == fixture.n);
-        assert(a == fixture.a);
-        assert(b == fixture.b);
+        dbft.verifyDBFTProof(fixture.publicValues, fixture.proof);
+        assert(fixture.newHeader == dbft.latestHeader());
+        assert(fixture.executionStateRoot == dbft.latestStateRoot());
+        assert(fixture.nextConsensusHash == dbft.nextConsensus());
     }
 
-    function testRevert_InvalidFibonacciProof() public {
+    function testRevert_InvalidDBFTProof() public {
         vm.expectRevert();
 
         SP1ProofFixtureJson memory fixture = loadFixture();
@@ -55,16 +58,16 @@ contract FibonacciGroth16Test is Test {
         // Create a fake proof.
         bytes memory fakeProof = new bytes(fixture.proof.length);
 
-        fibonacci.verifyFibonacciProof(fixture.publicValues, fakeProof);
+        dbft.verifyDBFTProof(fixture.publicValues, fakeProof);
     }
 }
 
 
-contract FibonacciPlonkTest is Test {
+contract SP1DBFTPlonkTest is Test {
     using stdJson for string;
 
     address verifier;
-    Fibonacci public fibonacci;
+    SP1DBFT public dbft;
 
     function loadFixture() public view returns (SP1ProofFixtureJson memory) {
         string memory root = vm.projectRoot();
@@ -78,21 +81,22 @@ contract FibonacciPlonkTest is Test {
         SP1ProofFixtureJson memory fixture = loadFixture();
 
         verifier = address(new SP1VerifierGateway(address(1)));
-        fibonacci = new Fibonacci(verifier, fixture.vkey);
+        // The data of a parent block is necessary here.
+        dbft = new SP1DBFT(verifier, fixture.vkey, fixture.prevHeader, "0x", fixture.consensusHash);
     }
 
-    function test_ValidFibonacciProof() public {
+    function test_ValidDBFTProof() public {
         SP1ProofFixtureJson memory fixture = loadFixture();
 
         vm.mockCall(verifier, abi.encodeWithSelector(SP1VerifierGateway.verifyProof.selector), abi.encode(true));
 
-        (uint32 n, uint32 a, uint32 b) = fibonacci.verifyFibonacciProof(fixture.publicValues, fixture.proof);
-        assert(n == fixture.n);
-        assert(a == fixture.a);
-        assert(b == fixture.b);
+        dbft.verifyDBFTProof(fixture.publicValues, fixture.proof);
+        assert(fixture.newHeader == dbft.latestHeader());
+        assert(fixture.executionStateRoot == dbft.latestStateRoot());
+        assert(fixture.nextConsensusHash == dbft.nextConsensus());
     }
 
-    function testRevert_InvalidFibonacciProof() public {
+    function testRevert_InvalidDBFTProof() public {
         vm.expectRevert();
 
         SP1ProofFixtureJson memory fixture = loadFixture();
@@ -100,6 +104,6 @@ contract FibonacciPlonkTest is Test {
         // Create a fake proof.
         bytes memory fakeProof = new bytes(fixture.proof.length);
 
-        fibonacci.verifyFibonacciProof(fixture.publicValues, fakeProof);
+        dbft.verifyDBFTProof(fixture.publicValues, fakeProof);
     }
 }
