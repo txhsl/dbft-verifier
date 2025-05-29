@@ -11,6 +11,13 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/vm/opcode"
 )
 
+const (
+	PublickeyLen     = 33               // Length of public key in bytes.
+	SignatureLen     = 64               // Length of signature in bytes.
+	PublicKeyDataLen = PublickeyLen + 2 // Length of public key data in script (PUSHDATA1 + key length + public key).
+	SignatureDataLen = SignatureLen + 2 // Length of signature data in script (PUSHDATA1 + signature length + signature).
+)
+
 func VerifyUpdateHeader(parent, current *block.Header, network uint32) bool {
 	if current.PrevHash != parent.Hash() {
 		return false
@@ -27,10 +34,10 @@ func VerifyUpdateHeader(parent, current *block.Header, network uint32) bool {
 	if exactConsensus.ScriptHash() != expectedConsensus {
 		return false
 	}
-	if len(exactConsensus.VerificationScript) < 7*35+7 {
+	if len(exactConsensus.VerificationScript) < 7*PublicKeyDataLen+7 {
 		return false
 	}
-	if len(exactConsensus.InvocationScript) < 5*66 {
+	if len(exactConsensus.InvocationScript) < 5*SignatureDataLen {
 		return false
 	}
 	// Content verification
@@ -41,40 +48,40 @@ func VerifyUpdateHeader(parent, current *block.Header, network uint32) bool {
 	}
 	pubs := make([][]byte, 7)
 	for i := range 7 {
-		if exactConsensus.VerificationScript[i*35+1] != byte(opcode.PUSHDATA1) {
+		if exactConsensus.VerificationScript[i*PublicKeyDataLen+1] != byte(opcode.PUSHDATA1) {
 			return false
 		}
 		// Key length
-		if exactConsensus.VerificationScript[i*35+2] != byte(33) {
+		if exactConsensus.VerificationScript[i*PublicKeyDataLen+2] != byte(PublickeyLen) {
 			return false
 		}
 		// Key data
-		pubs[i] = exactConsensus.VerificationScript[i*35+3 : i*35+36]
+		pubs[i] = exactConsensus.VerificationScript[i*PublicKeyDataLen+3 : (i+1)*PublicKeyDataLen+1]
 	}
 	// Check the exact pubkey array length
-	if exactConsensus.VerificationScript[7*35+1] != byte(opcode.PUSH7) {
+	if exactConsensus.VerificationScript[7*PublicKeyDataLen+1] != byte(opcode.PUSH7) {
 		return false
 	}
 	// Check the syscall
-	if exactConsensus.VerificationScript[7*35+2] != byte(opcode.SYSCALL) {
+	if exactConsensus.VerificationScript[7*PublicKeyDataLen+2] != byte(opcode.SYSCALL) {
 		return false
 	}
-	if binary.LittleEndian.Uint32(exactConsensus.VerificationScript[7*35+3:7*35+7]) != interopnames.ToID([]byte(interopnames.SystemCryptoCheckMultisig)) {
+	if binary.LittleEndian.Uint32(exactConsensus.VerificationScript[7*PublicKeyDataLen+3:7*PublicKeyDataLen+7]) != interopnames.ToID([]byte(interopnames.SystemCryptoCheckMultisig)) {
 		return false
 	}
 	// Invocation script, need to analyze the script outside
 	// Ref https://github.com/nspcc-dev/neo-go/blob/1436de45bfbe44b5e60710dafb117b647adddb24/internal/testchain/address.go#L129
 	sigs := make([][]byte, 5)
 	for i := range 5 {
-		if exactConsensus.InvocationScript[i*66] != byte(opcode.PUSHDATA1) {
+		if exactConsensus.InvocationScript[i*SignatureDataLen] != byte(opcode.PUSHDATA1) {
 			return false
 		}
 		// Sig length
-		if exactConsensus.InvocationScript[i*66+1] != byte(64) {
+		if exactConsensus.InvocationScript[i*SignatureDataLen+1] != byte(SignatureLen) {
 			return false
 		}
 		// Sig data
-		sigs[i] = exactConsensus.InvocationScript[i*66+2 : i*66+66]
+		sigs[i] = exactConsensus.InvocationScript[i*SignatureDataLen+2 : (i+1)*SignatureDataLen]
 	}
 	// Check multi-sigs
 	return vm.CheckMultisigPar(elliptic.P256(), hash.NetSha256(network, current).BytesBE(), pubs, sigs)
