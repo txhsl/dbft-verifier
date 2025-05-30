@@ -8,3 +8,6 @@ resolver = "2"
 
 [workspace.dependencies]
 alloy-sol-types = "1.0"
+neo3 = "0.1.9"
+p256 = "0.13.2"
+rustc-serialize = "0.3.25"

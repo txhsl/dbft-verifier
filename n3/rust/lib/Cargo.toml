@@ -1,7 +1,10 @@
 [package]
-name = "fibonacci-lib"
+name = "n3-dbft-verifier-lib"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 alloy-sol-types = { workspace = true }
+neo3 = { workspace = true }
+p256 = { workspace = true }
+rustc-serialize = { workspace = true }
