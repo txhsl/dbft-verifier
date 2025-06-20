@@ -47,7 +47,7 @@ func VerifyUpdateHeader(parent, current *block.Header, network uint32) bool {
 		return false
 	}
 	pubs := make([][]byte, 7)
-	for i := range 7 {
+	for i := 0; i < 7; i++ {
 		if exactConsensus.VerificationScript[i*PublicKeyDataLen+1] != byte(opcode.PUSHDATA1) {
 			return false
 		}
@@ -72,7 +72,7 @@ func VerifyUpdateHeader(parent, current *block.Header, network uint32) bool {
 	// Invocation script, need to analyze the script outside
 	// Ref https://github.com/nspcc-dev/neo-go/blob/1436de45bfbe44b5e60710dafb117b647adddb24/internal/testchain/address.go#L129
 	sigs := make([][]byte, 5)
-	for i := range 5 {
+	for i := 0; i < 5; i++ {
 		if exactConsensus.InvocationScript[i*SignatureDataLen] != byte(opcode.PUSHDATA1) {
 			return false
 		}
