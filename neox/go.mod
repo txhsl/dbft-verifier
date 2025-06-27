@@ -37,4 +37,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/consensys/gnark => github.com/bane-labs/gnark v0.13.1-0.20250620075319-032e190493f7
+replace github.com/consensys/gnark => github.com/bane-labs/gnark v0.13.1-0.20250623065227-db1b8fdd4d19

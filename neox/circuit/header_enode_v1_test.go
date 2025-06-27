@@ -1,13 +1,13 @@
 package circuit
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"testing"
 )
 
@@ -41,126 +41,15 @@ func TestHeaderEncodeV1Circuit(t *testing.T) {
     "withdrawalsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 }`,
 	))
-	ParentHash := make([]frontend.Variable, len(header.ParentHash))
-	for i := 0; i < len(header.ParentHash); i++ {
-		ParentHash[i] = header.ParentHash[i]
-	}
-	UncleHash := make([]frontend.Variable, len(header.UncleHash))
-	for i := 0; i < len(header.UncleHash); i++ {
-		UncleHash[i] = header.UncleHash[i]
-	}
-	Coinbase := make([]frontend.Variable, len(header.Coinbase))
-	for i := 0; i < len(header.Coinbase); i++ {
-		Coinbase[i] = header.Coinbase[i]
-	}
-	Root := make([]frontend.Variable, len(header.Root))
-	for i := 0; i < len(header.Root); i++ {
-		Root[i] = header.Root[i]
-	}
-	TxHash := make([]frontend.Variable, len(header.TxHash))
-	for i := 0; i < len(header.TxHash); i++ {
-		TxHash[i] = header.TxHash[i]
-	}
-	ReceiptHash := make([]frontend.Variable, len(header.ReceiptHash))
-	for i := 0; i < len(header.ReceiptHash); i++ {
-		ReceiptHash[i] = header.ReceiptHash[i]
-	}
-	Bloom := make([]frontend.Variable, len(header.Bloom))
-	for i := 0; i < len(header.Bloom); i++ {
-		Bloom[i] = header.Bloom[i]
-	}
-	difficulty := header.Difficulty.Bytes()
-	Difficulty := make([]frontend.Variable, len(difficulty))
-	for i := 0; i < len(difficulty); i++ {
-		Difficulty[i] = difficulty[i]
-	}
-	number := header.Number.Bytes()
-	Number := make([]frontend.Variable, len(number))
-	for i := 0; i < len(number); i++ {
-		Number[i] = number[i]
-	}
-	buf1 := new(bytes.Buffer)
-	err = binary.Write(buf1, binary.BigEndian, header.GasLimit)
-	if err != nil {
-		fmt.Println("Error encoding uint64:", err)
-		return
-	}
-	gl := buf1.Bytes()
-	gl = removeUnusedZeroBytes(gl)
-	GasLimit := make([]frontend.Variable, len(gl))
-	for i := 0; i < len(gl); i++ {
-		GasLimit[i] = gl[i]
-	}
-	buf2 := new(bytes.Buffer)
-	err = binary.Write(buf2, binary.BigEndian, header.GasUsed)
-	if err != nil {
-		fmt.Println("Error encoding uint64:", err)
-		return
-	}
-	gu := buf2.Bytes()
-	gu = removeUnusedZeroBytes(gu)
-	GasUsed := make([]frontend.Variable, len(gu))
-	for i := 0; i < len(gu); i++ {
-		GasUsed[i] = gu[i]
-	}
-	buf3 := new(bytes.Buffer)
-	err = binary.Write(buf3, binary.BigEndian, header.Time)
-	if err != nil {
-		fmt.Println("Error encoding uint64:", err)
-		return
-	}
-	time := buf3.Bytes()
-	time = removeUnusedZeroBytes(time)
-	Time := make([]frontend.Variable, len(time))
-	for i := 0; i < len(time); i++ {
-		Time[i] = time[i]
-	}
-	Extra := make([]frontend.Variable, len(header.Extra))
-	for i := 0; i < len(header.Extra); i++ {
-		Extra[i] = header.Extra[i]
-	}
-	MixDigest := make([]frontend.Variable, len(header.MixDigest))
-	for i := 0; i < len(header.MixDigest); i++ {
-		MixDigest[i] = header.MixDigest[i]
-	}
-	Nonce := make([]frontend.Variable, len(header.Nonce))
-	for i := 0; i < len(header.Nonce); i++ {
-		Nonce[i] = header.Nonce[i]
-	}
-	bf := header.BaseFee.Bytes()
-	BaseFee := make([]frontend.Variable, len(bf))
-	for i := 0; i < len(bf); i++ {
-		BaseFee[i] = bf[i]
-	}
-	WithdrawalsHash := make([]frontend.Variable, len(header.WithdrawalsHash))
-	for i := 0; i < len(header.WithdrawalsHash); i++ {
-		WithdrawalsHash[i] = header.WithdrawalsHash[i]
-	}
-	pheader := HeaderParameters{
-		ParentHash:  ParentHash,
-		UncleHash:   UncleHash,
-		Coinbase:    Coinbase,
-		Root:        Root,
-		TxHash:      TxHash,
-		ReceiptHash: ReceiptHash,
-		Bloom:       Bloom,
-		Difficulty:  Difficulty,
-		Number:      Number,
-		GasLimit:    GasLimit,
-		GasUsed:     GasUsed,
-		Time:        Time,
-		Extra:       Extra,
-		MixDigest:   MixDigest,
-		Nonce:       Nonce,
-
-		BaseFee:         BaseFee,
-		WithdrawalsHash: WithdrawalsHash,
-	}
-
-	data, err := encodeSigHeader(header)
+	pheader := GetHeaderParamter(header)
+	data, err := encodeHeader(header)
+	//data, err := encodeSigHeader(header)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("电路外endoce结果：")
+	fmt.Printf("%v\n", data)
+	data = common.BytesToHash(crypto.Keccak256(data)).Bytes()
 	Data := make([]frontend.Variable, len(data))
 	for i := 0; i < len(Data); i++ {
 		Data[i] = data[i]
@@ -190,9 +79,7 @@ type HeaderEncodeWrapper struct {
 // Define declares the circuit's constraints
 func (c *HeaderEncodeWrapper) Define(api frontend.API) error {
 	encode := NewHeaderEncode(api)
-	edata := encode.EncodeSigHeader(api, c.Header)
-	api.Println(edata)
-	api.Println(c.Data)
+	edata := encode.RlpHash(api, c.Header)
 	for i := 0; i < len(edata); i++ {
 		api.AssertIsEqual(edata[i], c.Data[i])
 	}

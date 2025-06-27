@@ -3,6 +3,9 @@ package circuit
 import (
 	"github.com/consensys/gnark-crypto/ecc"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/consensys/gnark/constraint"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bls12381"
 	"github.com/consensys/gnark/test"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -98,7 +101,7 @@ func TestVerifyCircuit(t *testing.T) {
 		Sig:     sw_bls12381.NewG2Affine(sig),
 		Pub:     sw_bls12381.NewG1Affine(pk),
 	}
-	//_, err = frontend.Compile(ecc.BN254.ScalarField(), scs.NewBuilder, &circuit)
+	_, err = frontend.Compile(ecc.BN254.ScalarField(), scs.NewBuilder[constraint.U64], &circuit)
 	err = test.IsSolved(&circuit, &witness, ecc.BN254.ScalarField())
 	if err != nil {
 		panic(err)

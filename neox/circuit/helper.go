@@ -117,19 +117,24 @@ func GetHeaderParamter(header *types.Header) HeaderParameters {
 	for i := 0; i < len(difficulty); i++ {
 		Difficulty[i] = difficulty[i]
 	}
-	number := header.Number.Bytes()
+	buf0 := new(bytes.Buffer)
+	err := binary.Write(buf0, binary.BigEndian, header.Number.Uint64())
+	if err != nil {
+		fmt.Println("Error encoding uint64:", err)
+		panic(err)
+	}
+	number := buf0.Bytes()
 	Number := make([]frontend.Variable, len(number))
 	for i := 0; i < len(number); i++ {
 		Number[i] = number[i]
 	}
 	buf1 := new(bytes.Buffer)
-	err := binary.Write(buf1, binary.BigEndian, header.GasLimit)
+	err = binary.Write(buf1, binary.BigEndian, header.GasLimit)
 	if err != nil {
 		fmt.Println("Error encoding uint64:", err)
 		panic(err)
 	}
 	gl := buf1.Bytes()
-	gl = removeUnusedZeroBytes(gl)
 	GasLimit := make([]frontend.Variable, len(gl))
 	for i := 0; i < len(gl); i++ {
 		GasLimit[i] = gl[i]
@@ -141,7 +146,6 @@ func GetHeaderParamter(header *types.Header) HeaderParameters {
 		panic(err)
 	}
 	gu := buf2.Bytes()
-	gu = removeUnusedZeroBytes(gu)
 	GasUsed := make([]frontend.Variable, len(gu))
 	for i := 0; i < len(gu); i++ {
 		GasUsed[i] = gu[i]
@@ -153,7 +157,6 @@ func GetHeaderParamter(header *types.Header) HeaderParameters {
 		panic(err)
 	}
 	time := buf3.Bytes()
-	time = removeUnusedZeroBytes(time)
 	Time := make([]frontend.Variable, len(time))
 	for i := 0; i < len(time); i++ {
 		Time[i] = time[i]
